@@ -4,14 +4,18 @@ import {
 	AxesHelper,
 	Color,
 	DirectionalLight,
+	Mesh,
+	MeshStandardMaterial,
 	PCFSoftShadowMap,
 	PerspectiveCamera,
+	PlaneGeometry,
 	SRGBColorSpace,
 	Scene,
 	WebGLRenderer,
 } from "three";
 import { FBXLoader, OrbitControls } from "three/examples/jsm/Addons";
 import { loadModel } from "../helpers";
+import BasicCharacterController from "../Controller/BasicCharacterController";
 
 export default class World {
 	constructor() {
@@ -35,22 +39,50 @@ export default class World {
 		document.getElementById("gl").appendChild(this._canvas);
 
 		this._camera = new PerspectiveCamera(60, this._viewport.width / this._viewport.height, 0.1, 1000);
-		this._camera.position.set(0, 2, 6);
+		this._camera.position.set(25, 40, 80);
 
 		this._scene = new Scene();
 		this._scene.background = new Color(0xfcfcfc);
 
 		this._controls = new OrbitControls(this._camera, this._canvas);
+		this._controls.target.set(0, 1, 0);
 		this._controls.enableDamping = true;
 		this._controls.update();
 
-		this._loadMiles();
-
-		const light = new DirectionalLight("#ffffff", 3);
-		light.position.set(0, 2, 10);
+		let light = new DirectionalLight(0xffffff, 1.0);
+		light.position.set(-100, 100, 100);
+		light.target.position.set(0, 0, 0);
+		light.castShadow = true;
+		light.shadow.bias = -0.001;
+		light.shadow.mapSize.width = 4096;
+		light.shadow.mapSize.height = 4096;
+		light.shadow.camera.near = 0.1;
+		light.shadow.camera.far = 500.0;
+		light.shadow.camera.near = 0.5;
+		light.shadow.camera.far = 500.0;
+		light.shadow.camera.left = 50;
+		light.shadow.camera.right = -50;
+		light.shadow.camera.top = 50;
+		light.shadow.camera.bottom = -50;
 		this._scene.add(light);
 
-		this._scene.add(new AxesHelper());
+		light = new AmbientLight(0xffffff, 0.25);
+		this._scene.add(light);
+
+		// this._scene.add(new AxesHelper());
+		const plane = new Mesh(
+			new PlaneGeometry(200, 200, 10, 10),
+			new MeshStandardMaterial({
+				color: 0x4d4d4d,
+			})
+		);
+		plane.castShadow = false;
+		plane.receiveShadow = true;
+		plane.rotation.x = -Math.PI / 2;
+		this._scene.add(plane);
+
+		this._mixers = [];
+		this._previousRAF = null;
 
 		window.addEventListener(
 			"resize",
@@ -60,19 +92,75 @@ export default class World {
 			false
 		);
 		this._resize();
+		this._loadAnimatedModel();
 
 		this._raf = window.requestAnimationFrame(() => this._update());
 	}
 
-	async _loadMiles() {
+	_loadAnimatedModel() {
+		const params = {
+			camera: this._camera,
+			scene: this._scene,
+		};
+		this._controls = new BasicCharacterController(params);
+	}
+
+	_loadAnimatedModelAndPlay(path, modelFile, animFile, offset) {
 		const loader = new FBXLoader();
-		loader.load("/models/miles.fbx", (data) => {});
+		loader.setPath(path);
+		loader.load(modelFile, (fbx) => {
+			fbx.scale.setScalar(0.1);
+			fbx.traverse((c) => {
+				c.castShadow = true;
+			});
+			fbx.position.copy(offset);
+
+			const anim = new FBXLoader();
+			anim.setPath(path);
+			anim.load(animFile, (anim) => {
+				const m = new AnimationMixer(fbx);
+				this._mixers.push(m);
+				const idle = m.clipAction(anim.animations[0]);
+				idle.play();
+			});
+			this._scene.add(fbx);
+		});
+	}
+
+	_loadModel() {
+		const loader = new GLTFLoader();
+		loader.load("/models/character.glb", (gltf) => {
+			gltf.scene.traverse((c) => {
+				c.castShadow = true;
+			});
+			this._scene.add(gltf.scene);
+		});
 	}
 
 	_update = () => {
-		this._raf = window.requestAnimationFrame(this._update);
-		this._render();
+		requestAnimationFrame((t) => {
+			if (this._previousRAF === null) {
+				this._previousRAF = t;
+			}
+
+			this._update();
+
+			this._renderer.render(this._scene, this._camera);
+			this._step(t - this._previousRAF);
+			this._previousRAF = t;
+		});
 	};
+
+	_step(timeElapsed) {
+		const timeElapsedS = timeElapsed * 0.001;
+		if (this._mixers) {
+			this._mixers.map((m) => m.update(timeElapsedS));
+		}
+
+		if (this._controls) {
+			this._controls.Update(timeElapsedS);
+		}
+	}
 
 	_resize() {
 		this._viewport.width = window.innerWidth;
@@ -81,10 +169,5 @@ export default class World {
 		this._renderer.setSize(this._viewport.width, this._viewport.height);
 		this._camera.aspect = this._viewport.width / this._viewport.height;
 		this._camera.updateProjectionMatrix();
-	}
-
-	_render() {
-		this._renderer.render(this._scene, this._camera);
-		this._controls.update();
 	}
 }
