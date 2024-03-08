@@ -4,6 +4,7 @@ import {
 	AxesHelper,
 	Color,
 	DirectionalLight,
+	HemisphereLight,
 	Mesh,
 	MeshStandardMaterial,
 	PCFSoftShadowMap,
@@ -39,7 +40,7 @@ export default class World {
 		document.getElementById("gl").appendChild(this._canvas);
 
 		this._camera = new PerspectiveCamera(60, this._viewport.width / this._viewport.height, 0.1, 1000);
-		this._camera.position.set(25, 40, 80);
+		this._camera.position.set(-10, 20, 40);
 
 		this._scene = new Scene();
 		this._scene.background = new Color(0xfcfcfc);
@@ -50,7 +51,7 @@ export default class World {
 		this._controls.update();
 
 		let light = new DirectionalLight(0xffffff, 1.0);
-		light.position.set(-100, 100, 100);
+		light.position.set(-10, 10, 10);
 		light.target.position.set(0, 0, 0);
 		light.castShadow = true;
 		light.shadow.bias = -0.001;
@@ -71,9 +72,9 @@ export default class World {
 
 		// this._scene.add(new AxesHelper());
 		const plane = new Mesh(
-			new PlaneGeometry(200, 200, 10, 10),
+			new PlaneGeometry(100, 100, 10, 10),
 			new MeshStandardMaterial({
-				color: 0x4d4d4d,
+				color: 0xcccccc,
 			})
 		);
 		plane.castShadow = false;

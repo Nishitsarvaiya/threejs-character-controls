@@ -36,6 +36,12 @@ export default class BasicCharacterControllerInput {
 			case 16: // SHIFT
 				this._keys.shift = true;
 				break;
+			case 81: // SHIFT
+				this._keys.q = true;
+				break;
+			case 69: // SHIFT
+				this._keys.e = true;
+				break;
 		}
 	}
 
@@ -58,6 +64,12 @@ export default class BasicCharacterControllerInput {
 				break;
 			case 16: // SHIFT
 				this._keys.shift = false;
+				break;
+			case 81: // SHIFT
+				this._keys.q = false;
+				break;
+			case 69: // SHIFT
+				this._keys.e = false;
 				break;
 		}
 	}

@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import BasicCharacterControllerInput from "./BasicCharacterControllerInput";
 import BasicCharacterControllerProxy from "./BasicCharacterControllerProxy";
-import { FBXLoader } from "three/examples/jsm/Addons";
+import { FBXLoader, GLTFLoader } from "three/examples/jsm/Addons";
 import { CharacterFSM } from "../State/FiniteState";
 
 export default class BasicCharacterController {
@@ -12,7 +12,7 @@ export default class BasicCharacterController {
 	_Init(params) {
 		this._params = params;
 		this._decceleration = new THREE.Vector3(-0.0005, -0.0001, -5.0);
-		this._acceleration = new THREE.Vector3(1, 0.25, 100.0);
+		this._acceleration = new THREE.Vector3(1, 0.25, 75.0);
 		this._velocity = new THREE.Vector3(0, 0, 0);
 
 		this._animations = {};
@@ -25,8 +25,7 @@ export default class BasicCharacterController {
 	_LoadModels() {
 		const loader = new FBXLoader();
 		loader.setPath("/models/");
-		loader.load("character.fbx", (fbx) => {
-			fbx.scale.setScalar(0.1);
+		loader.load("ninja.fbx", (fbx) => {
 			fbx.traverse((c) => {
 				c.castShadow = true;
 			});
@@ -62,6 +61,21 @@ export default class BasicCharacterController {
 			loader.load("Idle.fbx", (a) => {
 				_OnLoad("Idle", a);
 			});
+			loader.load("Back.fbx", (a) => {
+				_OnLoad("Back", a);
+			});
+			loader.load("Kick.fbx", (a) => {
+				_OnLoad("Kick", a);
+			});
+			loader.load("Punch.fbx", (a) => {
+				_OnLoad("Punch", a);
+			});
+			loader.load("Jump.fbx", (a) => {
+				_OnLoad("Jump", a);
+			});
+			loader.load("Roll.fbx", (a) => {
+				_OnLoad("Roll", a);
+			});
 		});
 	}
 
@@ -91,12 +105,17 @@ export default class BasicCharacterController {
 
 		const acc = this._acceleration.clone();
 		if (this._input._keys.shift) {
-			acc.multiplyScalar(2.0);
+			acc.multiplyScalar(2.5);
+		}
+
+		if (this._stateMachine._currentState && this._stateMachine._currentState.Name == "Roll") {
+			acc.multiplyScalar(1.25);
 		}
 
 		if (this._input._keys.forward) {
 			velocity.z += acc.z * timeInSeconds;
 		}
+
 		if (this._input._keys.backward) {
 			velocity.z -= acc.z * timeInSeconds;
 		}

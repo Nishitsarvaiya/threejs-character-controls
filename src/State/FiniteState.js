@@ -1,4 +1,9 @@
+import BackState from "./BackState";
 import IdleState from "./IdleState";
+import JumpState from "./JumpState";
+import KickState from "./KickState";
+import PunchState from "./PunchState";
+import RollState from "./RollState";
 import RunningState from "./RunningState";
 import WalkingState from "./WalkingState";
 
@@ -46,5 +51,10 @@ export class CharacterFSM extends FiniteStateMachine {
 		this._AddState("Idle", IdleState);
 		this._AddState("Walking", WalkingState);
 		this._AddState("Running", RunningState);
+		this._AddState("Back", BackState);
+		this._AddState("Jump", JumpState);
+		this._AddState("Kick", KickState);
+		this._AddState("Punch", PunchState);
+		this._AddState("Roll", RollState);
 	}
 }

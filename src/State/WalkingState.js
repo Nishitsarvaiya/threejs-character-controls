@@ -22,10 +22,10 @@ export default class WalkingState extends State {
 			} else {
 				curAction.time = 0.0;
 				curAction.setEffectiveTimeScale(1.0);
-				curAction.setEffectiveWeight(1.0);
+				curAction.setEffectiveWeight(2.0);
 			}
 
-			curAction.crossFadeFrom(prevAction, 0.5, true);
+			curAction.crossFadeFrom(prevAction, 0.2, true);
 			curAction.play();
 		} else {
 			curAction.play();
@@ -35,9 +35,11 @@ export default class WalkingState extends State {
 	Exit() {}
 
 	Update(timeElapsed, input) {
-		if (input._keys.forward || input._keys.backward) {
+		if (input._keys.forward) {
 			if (input._keys.shift) {
 				this._parent.SetState("Running");
+			} else if (input._keys.space) {
+				this._parent.SetState("Jump");
 			}
 			return;
 		}
