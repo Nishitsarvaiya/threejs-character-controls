@@ -1,5 +1,5 @@
-import { EquirectangularReflectionMapping, Texture, TextureLoader } from 'three';
-import { GLTFLoader } from 'three/examples/jsm/Addons';
+import { EquirectangularReflectionMapping, Texture, TextureLoader } from "three";
+import { GLTFLoader, RGBELoader } from "three/examples/jsm/Addons";
 
 /**
  *

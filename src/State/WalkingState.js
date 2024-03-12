@@ -22,7 +22,7 @@ export default class WalkingState extends State {
 			} else {
 				curAction.time = 0.0;
 				curAction.setEffectiveTimeScale(1.0);
-				curAction.setEffectiveWeight(2.0);
+				curAction.setEffectiveWeight(1.0);
 			}
 
 			curAction.crossFadeFrom(prevAction, 0.2, true);

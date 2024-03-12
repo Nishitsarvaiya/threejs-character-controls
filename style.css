@@ -42,3 +42,28 @@ body {
 	width: 100%;
 	height: 100%;
 }
+
+.controls {
+	position: fixed;
+	right: 20px;
+	bottom: 20px;
+	display: flex;
+	align-items: flex-end;
+	justify-content: flex-end;
+	flex-direction: column;
+	gap: 20px;
+	background-color: #242424;
+	padding: 1rem 1.25rem;
+	border: 2px solid #00ff66;
+
+	div:not(.key) {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.key {
+		border: 1px solid #00ffaa9a;
+		padding: 0 0.5em;
+	}
+}

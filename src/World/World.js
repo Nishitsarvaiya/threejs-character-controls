@@ -4,19 +4,23 @@ import {
 	AxesHelper,
 	Color,
 	DirectionalLight,
+	DirectionalLightHelper,
 	HemisphereLight,
+	LoadingManager,
 	Mesh,
 	MeshStandardMaterial,
 	PCFSoftShadowMap,
 	PerspectiveCamera,
 	PlaneGeometry,
+	RepeatWrapping,
 	SRGBColorSpace,
 	Scene,
 	WebGLRenderer,
 } from "three";
 import { FBXLoader, OrbitControls } from "three/examples/jsm/Addons";
-import { loadModel } from "../helpers";
+import { loadHDRI, loadModel, loadTexture } from "../helpers";
 import BasicCharacterController from "../Controller/BasicCharacterController";
+import ThirdPersonCameraController from "../CameraController/ThirdPersonCameraController";
 
 export default class World {
 	constructor() {
@@ -30,6 +34,7 @@ export default class World {
 		};
 
 		this._renderer = new WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
+		this._renderer.setClearColor(0xffffff);
 		this._renderer.outputColorSpace = SRGBColorSpace;
 		this._renderer.toneMapping = ACESFilmicToneMapping;
 		this._renderer.shadowMap.enabled = true;
@@ -43,44 +48,57 @@ export default class World {
 		this._camera.position.set(-10, 20, 40);
 
 		this._scene = new Scene();
-		this._scene.background = new Color(0xfcfcfc);
 
-		this._controls = new OrbitControls(this._camera, this._canvas);
-		this._controls.target.set(0, 1, 0);
-		this._controls.enableDamping = true;
-		this._controls.update();
+		this._loadingManager = new LoadingManager();
+		this._loadingManager.onLoad = this._onSceneLoad;
 
-		let light = new DirectionalLight(0xffffff, 1.0);
-		light.position.set(-10, 10, 10);
+		loadHDRI("/textures/venice_sunset_2k.hdr").then((hdri) => {
+			this._scene.environment = hdri;
+			this._scene.background = hdri;
+			hdri.wrapS = RepeatWrapping;
+			hdri.wrapT = RepeatWrapping;
+		});
+
+		// this._controls = new OrbitControls(this._camera, this._canvas);
+		// this._controls.target.set(0, 1, 0);
+		// this._controls.enableDamping = true;
+		// this._controls.update();
+
+		let light = new DirectionalLight(0xffffff, 2.0);
+		light.position.set(100, 100, 80);
+		light.rotation.set(0, 0, 20);
 		light.target.position.set(0, 0, 0);
 		light.castShadow = true;
 		light.shadow.bias = -0.001;
 		light.shadow.mapSize.width = 4096;
 		light.shadow.mapSize.height = 4096;
 		light.shadow.camera.near = 0.1;
-		light.shadow.camera.far = 500.0;
-		light.shadow.camera.near = 0.5;
-		light.shadow.camera.far = 500.0;
-		light.shadow.camera.left = 50;
-		light.shadow.camera.right = -50;
-		light.shadow.camera.top = 50;
-		light.shadow.camera.bottom = -50;
+		light.shadow.camera.far = 1000.0;
+		light.shadow.camera.left = 500;
+		light.shadow.camera.right = -500;
+		light.shadow.camera.top = 500;
+		light.shadow.camera.bottom = -500;
 		this._scene.add(light);
+		this._light = light;
 
 		light = new AmbientLight(0xffffff, 0.25);
 		this._scene.add(light);
 
 		// this._scene.add(new AxesHelper());
-		const plane = new Mesh(
-			new PlaneGeometry(100, 100, 10, 10),
+
+		this._ground = new Mesh(
+			new PlaneGeometry(350, 350, 10, 10),
 			new MeshStandardMaterial({
 				color: 0xcccccc,
 			})
 		);
-		plane.castShadow = false;
-		plane.receiveShadow = true;
-		plane.rotation.x = -Math.PI / 2;
-		this._scene.add(plane);
+		this._ground.castShadow = false;
+		this._ground.receiveShadow = true;
+		this._ground.rotation.x = -Math.PI / 2;
+
+		this._loadGroundTextures();
+
+		this._scene.add(this._ground);
 
 		this._mixers = [];
 		this._previousRAF = null;
@@ -98,12 +116,38 @@ export default class World {
 		this._raf = window.requestAnimationFrame(() => this._update());
 	}
 
+	async _loadGroundTextures() {
+		let colorTexture = await loadTexture("/textures/floor/rubber_tiles_diff_1k.jpg");
+		colorTexture.wrapS = RepeatWrapping;
+		colorTexture.wrapT = RepeatWrapping;
+		colorTexture.repeat.set(20, 20);
+		this._ground.material.map = colorTexture;
+
+		let dispTexture = await loadTexture("/textures/floor/rubber_tiles_disp_1k.jpg");
+		this._ground.material.displacementMap = dispTexture;
+
+		let armTexture = await loadTexture("/textures/floor/rubber_tiles_arm_1k.jpg");
+		this._ground.material.aoMap = armTexture;
+		this._ground.material.roughnessMap = armTexture;
+		this._ground.material.metalnessMap = armTexture;
+
+		let normalTexture = await loadTexture("/textures/floor/rubber_tiles_nor_gl_1k.jpg");
+		this._ground.material.normalMap = normalTexture;
+		this._ground.material.needsUpdate = true;
+	}
+
 	_loadAnimatedModel() {
 		const params = {
 			camera: this._camera,
 			scene: this._scene,
 		};
 		this._controls = new BasicCharacterController(params);
+
+		this._thirdPersonCamera = new ThirdPersonCameraController({
+			camera: this._camera,
+			target: this._controls,
+			light: this._light,
+		});
 	}
 
 	_loadAnimatedModelAndPlay(path, modelFile, animFile, offset) {
@@ -161,6 +205,8 @@ export default class World {
 		if (this._controls) {
 			this._controls.Update(timeElapsedS);
 		}
+
+		this._thirdPersonCamera._update(timeElapsedS);
 	}
 
 	_resize() {
@@ -170,5 +216,9 @@ export default class World {
 		this._renderer.setSize(this._viewport.width, this._viewport.height);
 		this._camera.aspect = this._viewport.width / this._viewport.height;
 		this._camera.updateProjectionMatrix();
+	}
+
+	_onSceneLoad() {
+		console.log("loaded");
 	}
 }
