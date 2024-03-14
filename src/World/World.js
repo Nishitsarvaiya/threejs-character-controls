@@ -118,7 +118,7 @@ export default class World {
 		const pixelRatio = this._renderer.getPixelRatio();
 		this._fxaaPass.material.uniforms["resolution"].value.x = 1 / (this._viewport.width * pixelRatio);
 		this._fxaaPass.material.uniforms["resolution"].value.y = 1 / (this._viewport.height * pixelRatio);
-		const bloomPass = new UnrealBloomPass(new Vector2(window.innerWidth, window.innerHeight), 0.648, 0, 0.526);
+		const bloomPass = new UnrealBloomPass(new Vector2(window.innerWidth, window.innerHeight), 0.548, 0, 0.526);
 
 		this._composer = new EffectComposer(this._renderer);
 		this._composer.addPass(renderPass);
